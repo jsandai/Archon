@@ -135,7 +135,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     networks:
       - app-network
+    volumes:
+      - helixdb_data:/data
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  helixdb_data:
