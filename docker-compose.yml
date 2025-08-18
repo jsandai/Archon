@@ -127,9 +127,7 @@ services:
       - archon-server
 
   helixdb:
-    build:
-      context: .
-      dockerfile: Dockerfile.helixdb
+    image: docker.io/jsandai/helix-db
     container_name: Archon-HelixDB
     ports:
       - "6969:6969"
