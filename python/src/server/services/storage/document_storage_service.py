@@ -28,6 +28,25 @@ async def add_documents_to_supabase(
     provider: str | None = None,
     cancellation_check: Any | None = None,
 ) -> None:
+    # If HelixDB is enabled, add documents to it as well.
+    try:
+        use_helixdb = await credential_service.get_credential("USE_HELIXDB", "false", decrypt=True)
+        if isinstance(use_helixdb, str):
+            use_helixdb = use_helixdb.lower() == "true"
+    except:
+        use_helixdb = False
+
+    if use_helixdb:
+        from .helix_storage_service import add_documents_to_helixdb
+        asyncio.create_task(
+            add_documents_to_helixdb(
+                urls,
+                chunk_numbers,
+                contents,
+                metadatas,
+                batch_size,
+            )
+        )
     """
     Add documents to Supabase with threading optimizations.
 

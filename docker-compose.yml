@@ -22,6 +22,8 @@ services:
       - ARCHON_AGENTS_PORT=${ARCHON_AGENTS_PORT:-8052}
     networks:
       - app-network
+    depends_on:
+      - helixdb
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for MCP container control
       - ./python/src:/app/src  # Mount source code for hot reload
@@ -63,6 +65,7 @@ services:
     depends_on:
       - archon-server
       - archon-agents
+      - helixdb
     healthcheck:
       test: ["CMD", "sh", "-c", "python -c \"import socket; s=socket.socket(); s.connect(('localhost', ${ARCHON_MCP_PORT:-8051})); s.close()\""]
       interval: 30s
@@ -91,6 +94,8 @@ services:
       - ARCHON_AGENTS_PORT=${ARCHON_AGENTS_PORT:-8052}
     networks:
       - app-network
+    depends_on:
+      - helixdb
     healthcheck:
       test: ["CMD", "sh", "-c", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${ARCHON_AGENTS_PORT:-8052}/health')\""]
       interval: 30s
@@ -120,6 +125,18 @@ services:
       - ./archon-ui-main/public:/app/public
     depends_on:
       - archon-server
+
+  helixdb:
+    build:
+      context: .
+      dockerfile: Dockerfile.helixdb
+    container_name: Archon-HelixDB
+    ports:
+      - "6969:6969"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    networks:
+      - app-network
 
 networks:
   app-network:

@@ -24,6 +24,7 @@ from .agentic_rag_strategy import AgenticRAGStrategy
 from .base_search_strategy import BaseSearchStrategy
 from .hybrid_search_strategy import HybridSearchStrategy
 from .reranking_strategy import RerankingStrategy
+from .helixdb_search_strategy import HelixDBSearchStrategy
 
 logger = get_logger(__name__)
 
@@ -46,6 +47,15 @@ class RAGService:
         # Initialize optional strategies
         self.hybrid_strategy = HybridSearchStrategy(self.supabase_client, self.base_strategy)
         self.agentic_strategy = AgenticRAGStrategy(self.supabase_client, self.base_strategy)
+
+        # Initialize HelixDB strategy
+        self.helixdb_strategy = None
+        if self.get_bool_setting("USE_HELIXDB", False):
+            try:
+                self.helixdb_strategy = HelixDBSearchStrategy()
+                logger.info("HelixDB search strategy loaded successfully")
+            except Exception as e:
+                logger.warning(f"Failed to load HelixDB search strategy: {e}")
 
         # Initialize reranking strategy based on settings
         self.reranking_strategy = None
@@ -105,6 +115,14 @@ class RAGService:
         Returns:
             List of matching documents
         """
+        if self.get_bool_setting("USE_HELIXDB", False) and self.helixdb_strategy:
+            return await self.helixdb_strategy.vector_search(
+                query=query,
+                match_count=match_count,
+                filter_metadata=filter_metadata,
+                table="Document",
+            )
+
         with safe_span(
             "rag_search_documents",
             query_length=len(query),
@@ -164,6 +182,13 @@ class RAGService:
         Returns:
             List of matching code examples
         """
+        if self.get_bool_setting("USE_HELIXDB", False) and self.helixdb_strategy:
+            return await self.helixdb_strategy.vector_search(
+                query=query,
+                match_count=match_count,
+                filter_metadata=filter_metadata,
+                table="CodeExample",
+            )
         return await self.agentic_strategy.search_code_examples(
             query=query,
             match_count=match_count,

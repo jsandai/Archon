@@ -749,6 +749,28 @@ async def add_code_examples_to_supabase(
     progress_callback: Callable | None = None,
     provider: str | None = None,
 ):
+    # If HelixDB is enabled, add code examples to it as well.
+    try:
+        from ..credential_service import credential_service
+        use_helixdb = await credential_service.get_credential("USE_HELIXDB", "false", decrypt=True)
+        if isinstance(use_helixdb, str):
+            use_helixdb = use_helixdb.lower() == "true"
+    except:
+        use_helixdb = False
+
+    if use_helixdb:
+        from .helix_storage_service import add_code_examples_to_helixdb
+        import asyncio
+        asyncio.create_task(
+            add_code_examples_to_helixdb(
+                urls,
+                chunk_numbers,
+                code_examples,
+                summaries,
+                metadatas,
+                batch_size,
+            )
+        )
     """
     Add code examples to the Supabase code_examples table in batches.
 
