@@ -5,6 +5,7 @@ Implements vector similarity search using HelixDB.
 """
 
 from typing import Any, List
+import asyncio
 from ...config.logfire_config import get_logger, safe_span
 from ..helix_client import get_helix_client
 
@@ -46,9 +47,13 @@ class HelixDBSearchStrategy:
                     "k": match_count,
                 }
 
-                # The response format is not documented.
-                # We assume it returns a list of dictionaries.
-                results = await self.helix_client.query(search_query_name, params)
+                # The helix.Client.query method is synchronous, not async
+                # So we need to run it in a thread pool to avoid blocking
+                loop = asyncio.get_event_loop()
+                results = await loop.run_in_executor(
+                    None, 
+                    lambda: self.helix_client.query(search_query_name, params)
+                )
 
                 span.set_attribute("results_found", len(results))
                 return results
